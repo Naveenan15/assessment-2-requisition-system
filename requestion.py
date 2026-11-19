@@ -84,3 +84,84 @@ class Requisition:
 
         if status == "Approved":
             self.approval_reference = self.staff_id + str(self.requisition_id)[-3:]
+
+
+    def respond_to_requisition(self, decision):
+        """Apply a manager's decision to a submitted, pending request."""
+        if self.requisition_id is None or self.status != "Pending":
+            raise ValueError("Only submitted pending requisitions can be reviewed.")
+
+        if decision not in ("Approved", "Not approved", "Pending"):
+            raise ValueError("Choose Approved, Not approved or Pending.")
+
+        self._set_status(decision)
+        return self.status
+
+    @staticmethod
+    def display_requisitions(requisitions):
+        """Print the details of each submitted requisition."""
+        print("\nPrinting requisitions")
+        for requisition in requisitions:
+            if requisition.requisition_id is None:
+                continue
+
+            print(f"Date: {requisition.date}")
+            print(f"Requisition ID: {requisition.requisition_id}")
+            print(f"Staff ID: {requisition.staff_id}")
+            print(f"Staff Name: {requisition.staff_name}")
+            print(f"Total: ${requisition.total:.2f}")
+            print(f"Status: {requisition.status}")
+            print(f"Approval Reference Number: {requisition.approval_reference}")
+            print()
+
+    @staticmethod
+    def requisition_statistics(requisitions):
+        """Print and return counts based on current submitted statuses."""
+        counts = {"Submitted": 0, "Approved": 0, "Pending": 0, "Not approved": 0}
+
+        for requisition in requisitions:
+            if requisition.requisition_id is not None:
+                counts["Submitted"] += 1
+                counts[requisition.status] += 1
+
+        print("\nDisplaying the Requisition Statistics")
+        print(f"The total number of requisitions submitted: {counts['Submitted']}")
+        for status in ("Approved", "Pending", "Not approved"):
+            print(f"The total number of {status.lower()} requisitions: {counts[status]}")
+
+        return counts
+
+def main():
+    examples = [
+        ("03/04/2024", "FN19", "John Paul", [("Coffee", 200), ("Paper", 150)]),
+        ("05/04/2024", "FN20", "Tracy Brown", [("Desk", 500)]),
+        ("07/05/2024", "FN15", "Emma Wellington", [("Equipment", 3500)]),
+        ("03/05/2024", "FN02", "Catlin White", [("Supplies", "499.99")]),
+        ("08/05/2024", "FN21", "Alex Lee", [("Monitor", 1000)]),
+    ]
+
+    requisitions = []
+    for date, staff_id, staff_name, items in examples:
+        requisition = Requisition(date, staff_id, staff_name)
+        requisition.add_requisition(items)
+        requisitions.append(requisition)
+
+    print("BEFORE MANAGER REVIEW")
+    Requisition.display_requisitions(requisitions)
+    before = Requisition.requisition_statistics(requisitions)
+    assert before == {"Submitted": 5, "Approved": 2, "Pending": 3, "Not approved": 0}
+
+    requisitions[1].respond_to_requisition("Approved")
+    requisitions[2].respond_to_requisition("Not approved")
+    requisitions[4].respond_to_requisition("Pending")
+
+    print("\nAFTER MANAGER REVIEW")
+    Requisition.display_requisitions(requisitions)
+    after = Requisition.requisition_statistics(requisitions)
+    assert after == {"Submitted": 5, "Approved": 3, "Pending": 1, "Not approved": 1}
+
+    print("\nAll demonstration checks passed.")
+
+
+if __name__ == "__main__":
+    main()
